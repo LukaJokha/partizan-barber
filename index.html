@@ -10,14 +10,13 @@
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@100;300;400;700&display=swap" rel="stylesheet">
     <style>
         :root { --gold: #C5A059; --dark: #080808; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Outfit', sans-serif; background-color: var(--dark); color: #ffffff; overflow-x: hidden; }
         .heading { font-family: 'Bebas Neue', cursive; letter-spacing: 0.05em; }
         
-        /* Custom Smooth Scroll & Reveal */
         .reveal { opacity: 0; transform: translateY(30px); transition: all 0.8s ease-out; }
         .reveal.active { opacity: 1; transform: translateY(0); }
 
-        /* Luxury Price Label */
         .price-chip {
             background: var(--gold);
             color: black;
@@ -31,10 +30,8 @@
             clip-path: polygon(15% 0%, 100% 0%, 100% 100%, 0% 100%);
         }
 
-        /* Glassmorphism */
-        .glass { background: rgba(0,0,0,0.8); backdrop-filter: blur(15px); border-bottom: 1px solid rgba(197,160,89,0.1); }
+        .glass { background: rgba(0,0,0,0.95); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(197,160,89,0.15); }
         
-        /* Interactive Elements */
         .hover-lift { transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         .hover-lift:hover { transform: translateY(-10px); }
 
@@ -43,6 +40,657 @@
 
         .line-accent { height: 2px; background: var(--gold); width: 0; transition: width 0.6s ease; }
         .group:hover .line-accent { width: 100%; }
+
+        .gold-text { color: var(--gold); }
+        .gold-bg { background: var(--gold); }
+
+        .time-slot {
+            padding: 12px 16px;
+            border: 1px solid rgba(197,160,89,0.3);
+            background: rgba(197,160,89,0.05);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .time-slot:hover:not(.booked) {
+            background: rgba(197,160,89,0.2);
+            border-color: var(--gold);
+        }
+
+        .time-slot.selected {
+            background: var(--gold);
+            color: black;
+            border-color: var(--gold);
+        }
+
+        .time-slot.booked {
+            background: rgba(220,38,38,0.2);
+            border-color: rgba(220,38,38,0.5);
+            color: #a5a5a5;
+            cursor: not-allowed;
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(4px);
+            z-index: 999;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            background: #1a1a1a;
+            border: 1px solid rgba(197,160,89,0.2);
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 700px;
+            width: 95%;
+            max-height: 95vh;
+            overflow-y: auto;
+            animation: slideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @media (max-width: 768px) {
+            .modal-content {
+                padding: 24px;
+                border-radius: 16px;
+                max-width: 100%;
+                width: 98%;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .modal-content {
+                padding: 20px;
+                max-height: 100vh;
+                border-radius: 12px;
+            }
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(40px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .input-field {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(197,160,89,0.2);
+            padding: 12px 16px;
+            border-radius: 8px;
+            color: white;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+        }
+
+        .input-field:focus {
+            outline: none;
+            background: rgba(255,255,255,0.08);
+            border-color: var(--gold);
+            box-shadow: 0 0 20px rgba(197,160,89,0.1);
+        }
+
+        .btn-primary {
+            background: var(--gold);
+            color: black;
+            padding: 14px 32px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(197,160,89,0.3);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            border: 1px solid rgba(197,160,89,0.5);
+            color: var(--gold);
+            padding: 12px 28px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(197,160,89,0.1);
+            border-color: var(--gold);
+        }
+
+        .service-option {
+            background: rgba(255,255,255,0.03);
+            border: 2px solid rgba(197,160,89,0.2);
+            padding: 20px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 12px;
+            display: block;
+            text-align: left;
+            width: 100%;
+        }
+
+        .service-option:hover {
+            background: rgba(197,160,89,0.1);
+            border-color: var(--gold);
+            transform: translateX(4px);
+        }
+
+        .service-option.selected {
+            background: rgba(197,160,89,0.25);
+            border-color: var(--gold);
+            box-shadow: 0 0 20px rgba(197,160,89,0.15);
+        }
+
+        .service-option input[type="radio"] {
+            accent-color: var(--gold);
+            margin-right: 12px;
+            cursor: pointer;
+            width: 18px;
+            height: 18px;
+        }
+
+        .service-details {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 8px;
+            flex-wrap: wrap;
+        }
+
+        .service-name {
+            font-weight: 700;
+            font-size: 1rem;
+            color: white;
+            flex: 1;
+        }
+
+        .service-price {
+            color: var(--gold);
+            font-weight: 800;
+            font-size: 1.1rem;
+        }
+
+        .service-description {
+            color: rgba(255,255,255,0.5);
+            font-size: 0.85rem;
+            margin-top: 8px;
+        }
+
+        @media (max-width: 768px) {
+            .service-option {
+                padding: 16px;
+                margin-bottom: 10px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .service-option {
+                padding: 14px;
+                margin-bottom: 8px;
+            }
+
+            .service-details {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .service-name {
+                font-size: 0.95rem;
+            }
+        }
+
+        .barber-card {
+            background: rgba(255,255,255,0.03);
+            border: 2px solid rgba(197,160,89,0.2);
+            padding: 20px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            margin-bottom: 12px;
+        }
+
+        .barber-card:hover {
+            background: rgba(197,160,89,0.1);
+            border-color: var(--gold);
+            transform: translateY(-4px);
+        }
+
+        .barber-card.selected {
+            background: rgba(197,160,89,0.25);
+            border-color: var(--gold);
+            box-shadow: 0 0 20px rgba(197,160,89,0.15);
+        }
+
+        .barber-card input[type="radio"] {
+            accent-color: var(--gold);
+        }
+
+        .barber-name {
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: white;
+            margin-bottom: 6px;
+        }
+
+        .barber-specialty {
+            color: var(--gold);
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .barber-extra {
+            color: rgba(255,255,255,0.5);
+            font-size: 0.8rem;
+            margin-top: 8px;
+        }
+
+        .barber-cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        @media (max-width: 768px) {
+            .barber-cards-grid {
+                display: grid;
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+        }
+
+        .progress-bar {
+            height: 3px;
+            background: rgba(197,160,89,0.2);
+            border-radius: 10px;
+            margin-bottom: 30px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--gold);
+            transition: width 0.3s ease;
+        }
+
+        .booking-step {
+            display: none;
+        }
+
+        .booking-step.active {
+            display: block;
+        }
+
+        .nav-btn {
+            color: rgba(197,160,89,0.6);
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: color 0.3s ease;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+        }
+
+        .nav-btn:hover {
+            color: var(--gold);
+        }
+
+        .nav-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .date-selector {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+        }
+
+        .date-box {
+            aspect-ratio: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(197,160,89,0.2);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            padding: 8px;
+            text-align: center;
+        }
+
+        .date-box:hover:not(.disabled) {
+            background: rgba(197,160,89,0.1);
+            border-color: var(--gold);
+        }
+
+        .date-box.selected {
+            background: var(--gold);
+            color: black;
+            border-color: var(--gold);
+        }
+
+        .date-box.disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .confirmation-badge {
+            background: rgba(197,160,89,0.1);
+            border-left: 3px solid var(--gold);
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .confirmation-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(197,160,89,0.1);
+        }
+
+        .confirmation-row:last-child {
+            border-bottom: none;
+        }
+
+        .confirmation-label {
+            color: rgba(255,255,255,0.6);
+            font-size: 0.9rem;
+        }
+
+        .confirmation-value {
+            color: var(--gold);
+            font-weight: 700;
+        }
+
+        .availability-legend {
+            display: flex;
+            gap: 24px;
+            margin-bottom: 20px;
+            font-size: 0.85rem;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .legend-box {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            border: 1px solid rgba(197,160,89,0.5);
+        }
+
+        .legend-available {
+            background: rgba(197,160,89,0.2);
+        }
+
+        .legend-booked {
+            background: rgba(220,38,38,0.2);
+        }
+
+        .success-animation {
+            animation: successPulse 0.6s ease;
+        }
+
+        @keyframes successPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .booking-section {
+            background: linear-gradient(135deg, rgba(197,160,89,0.05) 0%, rgba(197,160,89,0.02) 100%);
+            border: 1px solid rgba(197,160,89,0.1);
+            border-radius: 15px;
+            padding: 40px;
+        }
+
+        @media (max-width: 768px) {
+            .modal-content {
+                padding: 24px;
+            }
+            .date-selector {
+                grid-template-columns: repeat(7, 1fr);
+            }
+            .availability-legend {
+                flex-direction: column;
+                gap: 12px;
+            }
+            .time-slot {
+                padding: 10px 12px;
+                font-size: 0.8rem;
+            }
+            .booking-step h2 {
+                font-size: 1.75rem !important;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .modal-content {
+                padding: 20px;
+            }
+            
+            .booking-step h2 {
+                font-size: 1.4rem !important;
+            }
+
+            .time-slot {
+                padding: 8px 10px;
+                font-size: 0.75rem;
+            }
+
+            .date-selector {
+                grid-template-columns: repeat(7, 1fr);
+                gap: 4px;
+            }
+
+            .date-box {
+                aspect-ratio: 1;
+                padding: 6px;
+                font-size: 0.7rem;
+            }
+
+            .date-box .text-sm {
+                font-size: 0.6rem !important;
+            }
+
+            .date-box .text-xs {
+                font-size: 0.55rem !important;
+            }
+
+            .progress-bar {
+                height: 2px;
+            }
+
+            .booking-step .space-y-3 {
+                gap: 8px !important;
+            }
+
+            .availability-legend {
+                font-size: 0.75rem;
+                gap: 12px;
+            }
+        }
+
+        .admin-tab-btn {
+            background: rgba(197,160,89,0.05);
+            border: 1px solid rgba(197,160,89,0.2);
+            color: rgba(197,160,89,0.6);
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+        }
+
+        .admin-tab-btn:hover {
+            background: rgba(197,160,89,0.15);
+            border-color: var(--gold);
+        }
+
+        .admin-tab-btn.active {
+            background: var(--gold);
+            color: black;
+            border-color: var(--gold);
+        }
+
+        .admin-tab-content {
+            animation: fadeIn 0.3s ease;
+        }
+
+        .admin-tab-content.hidden {
+            display: none;
+        }
+
+        .booking-card {
+            background: rgba(255,255,255,0.03);
+            border-left: 3px solid var(--gold);
+            padding: 16px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .booking-card:hover {
+            background: rgba(255,255,255,0.06);
+            transform: translateX(4px);
+        }
+
+        .booking-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 12px;
+        }
+
+        .booking-time {
+            color: var(--gold);
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .booking-service {
+            color: white;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .booking-customer {
+            color: rgba(255,255,255,0.7);
+            font-size: 0.9rem;
+        }
+
+        .booking-contact {
+            color: rgba(255,255,255,0.5);
+            font-size: 0.85rem;
+            margin-top: 8px;
+        }
+
+        .booking-actions {
+            display: flex;
+            gap: 6px;
+            margin-top: 12px;
+        }
+
+        .booking-action-btn {
+            flex: 1;
+            padding: 8px 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+        }
+
+        .btn-complete {
+            background: rgba(34,197,94,0.2);
+            color: #22c55e;
+            border: 1px solid rgba(34,197,94,0.3);
+        }
+
+        .btn-complete:hover {
+            background: rgba(34,197,94,0.3);
+        }
+
+        .btn-delete {
+            background: rgba(220,38,38,0.2);
+            color: #dc2626;
+            border: 1px solid rgba(220,38,38,0.3);
+        }
+
+        .btn-delete:hover {
+            background: rgba(220,38,38,0.3);
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .status-confirmed {
+            background: rgba(34,197,94,0.2);
+            color: #22c55e;
+        }
+
+        .status-completed {
+            background: rgba(59,130,246,0.2);
+            color: #3b82f6;
+        }
+
+        .status-cancelled {
+            background: rgba(220,38,38,0.2);
+            color: #dc2626;
+        }
     </style>
 </head>
 <body>
@@ -56,6 +704,7 @@
             <div class="hidden lg:flex space-x-10 text-[11px] font-bold uppercase tracking-widest text-zinc-400">
                 <a href="#services" class="hover:text-white transition">The Menu</a>
                 <a href="#gallery" class="hover:text-white transition">Collection</a>
+                <a href="#booking" class="hover:text-white transition">Reserve</a>
                 <a href="#footer" class="hover:text-white transition">Location</a>
             </div>
 
@@ -65,7 +714,7 @@
                     <button onclick="setLanguage('ge')" class="hover:text-white transition">GE</button>
                     <button onclick="setLanguage('ru')" class="hover:text-white transition">RU</button>
                 </div>
-                <a href="tel:+995555123456" class="border border-[#C5A059] gold-text px-6 py-2 text-[10px] font-bold uppercase hover:bg-[#C5A059] hover:text-black transition duration-300" data-i18n="book_now">Book Seat</a>
+                <button onclick="openBookingModal()" class="border border-[#C5A059] gold-text px-6 py-2 text-[10px] font-bold uppercase hover:bg-[#C5A059] hover:text-black transition duration-300" data-i18n="book_now">Book Seat</button>
             </div>
         </div>
     </nav>
@@ -78,6 +727,7 @@
             <span class="gold-text tracking-[1em] uppercase text-xs reveal" data-i18n="hero_top">Vera • Tbilisi</span>
             <h1 class="heading text-[12vw] leading-none mb-0 reveal" style="transition-delay: 0.2s" data-i18n="hero_title">PARTIZAN</h1>
             <p class="text-lg md:text-2xl font-light tracking-[0.6em] text-zinc-500 reveal uppercase" style="transition-delay: 0.4s" data-i18n="hero_subtitle">Estd. 2026</p>
+            <button onclick="openBookingModal()" class="reveal mt-8 border border-[#C5A059] gold-text px-10 py-3 text-sm font-bold uppercase hover:bg-[#C5A059] hover:text-black transition duration-300" style="transition-delay: 0.6s;">Reserve Now</button>
         </div>
     </header>
 
@@ -103,6 +753,14 @@
                             <div class="line-accent"></div>
                             <p class="text-zinc-600 mt-2 text-sm italic">Steam therapy, line-up, and luxury oil.</p>
                         </div>
+                        <div class="group cursor-pointer">
+                            <div class="flex justify-between items-end mb-2">
+                                <span class="text-2xl font-light uppercase tracking-tighter">Executive Package</span>
+                                <span class="text-2xl gold-text font-bold">80 GEL</span>
+                            </div>
+                            <div class="line-accent"></div>
+                            <p class="text-zinc-600 mt-2 text-sm italic">Haircut + beard sculpting + facial massage.</p>
+                        </div>
                     </div>
                 </div>
                 <div class="reveal" style="transition-delay: 0.3s">
@@ -124,6 +782,14 @@
                             <div class="line-accent"></div>
                             <p class="text-zinc-600 mt-2 text-sm italic">Custom structure based on face shape.</p>
                         </div>
+                        <div class="group cursor-pointer">
+                            <div class="flex justify-between items-end mb-2">
+                                <span class="text-2xl font-light uppercase tracking-tighter">Hair Treatment Therapy</span>
+                                <span class="text-2xl gold-text font-bold">120 GEL</span>
+                            </div>
+                            <div class="line-accent"></div>
+                            <p class="text-zinc-600 mt-2 text-sm italic">Rejuvenating keratin infusion and scalp massage.</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -131,21 +797,195 @@
     </section>
 
     <section id="gallery" class="py-32 px-6">
-        <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-12">
-            <div class="hover-lift relative group rounded-2xl overflow-hidden bg-zinc-900 reveal">
-                <div class="price-chip">45 GEL</div>
-                <img src="https://images.unsplash.com/photo-1621605815841-2cd6066f4132?auto=format&fit=crop&q=80&w=800" class="w-full h-[600px] object-cover opacity-70 group-hover:opacity-100 transition duration-700">
-                <div class="absolute bottom-10 left-10"><h3 class="heading text-4xl">The Neo Fade</h3></div>
+        <div class="max-w-7xl mx-auto">
+            <h2 class="heading text-7xl gold-text text-center mb-20 reveal">Portfolio</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-12">
+                <div class="hover-lift relative group rounded-2xl overflow-hidden bg-zinc-900 reveal">
+                    <div class="price-chip">45 GEL</div>
+                    <img src="https://images.unsplash.com/photo-1621605815841-2cd6066f4132?auto=format&fit=crop&q=80&w=800" class="w-full h-[600px] object-cover opacity-70 group-hover:opacity-100 transition duration-700">
+                    <div class="absolute bottom-10 left-10"><h3 class="heading text-4xl">The Neo Fade</h3></div>
+                </div>
+                <div class="hover-lift relative group rounded-2xl overflow-hidden bg-zinc-900 reveal" style="transition-delay: 0.2s">
+                    <div class="price-chip">90 GEL</div>
+                    <img src="https://images.unsplash.com/photo-1562322140-8baeececf3df?auto=format&fit=crop&q=80&w=800" class="w-full h-[600px] object-cover opacity-70 group-hover:opacity-100 transition duration-700">
+                    <div class="absolute bottom-10 left-10"><h3 class="heading text-4xl">Birkin Bangs</h3></div>
+                </div>
+                <div class="hover-lift relative group rounded-2xl overflow-hidden bg-zinc-900 reveal" style="transition-delay: 0.4s">
+                    <div class="price-chip">40 GEL</div>
+                    <img src="https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&q=80&w=800" class="w-full h-[600px] object-cover opacity-70 group-hover:opacity-100 transition duration-700">
+                    <div class="absolute bottom-10 left-10"><h3 class="heading text-4xl">Sculpted Beard</h3></div>
+                </div>
             </div>
-            <div class="hover-lift relative group rounded-2xl overflow-hidden bg-zinc-900 reveal" style="transition-delay: 0.2s">
-                <div class="price-chip">90 GEL</div>
-                <img src="https://images.unsplash.com/photo-1562322140-8baeececf3df?auto=format&fit=crop&q=80&w=800" class="w-full h-[600px] object-cover opacity-70 group-hover:opacity-100 transition duration-700">
-                <div class="absolute bottom-10 left-10"><h3 class="heading text-4xl">Birkin Bangs</h3></div>
+        </div>
+    </section>
+
+    <section class="py-32 px-6 bg-gradient-to-b from-black to-zinc-950">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-20 reveal">
+                <h2 class="heading text-7xl gold-text mb-6">Why Choose PARTIZAN</h2>
+                <p class="text-zinc-400 text-lg">Experience grooming at the highest level of craftsmanship</p>
             </div>
-            <div class="hover-lift relative group rounded-2xl overflow-hidden bg-zinc-900 reveal" style="transition-delay: 0.4s">
-                <div class="price-chip">40 GEL</div>
-                <img src="https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&q=80&w=800" class="w-full h-[600px] object-cover opacity-70 group-hover:opacity-100 transition duration-700">
-                <div class="absolute bottom-10 left-10"><h3 class="heading text-4xl">Sculpted Beard</h3></div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-12 mb-20">
+                <div class="reveal">
+                    <div class="flex items-start gap-6">
+                        <div class="w-16 h-16 rounded-full bg-gradient-to-br from-[#C5A059] to-yellow-700 flex items-center justify-center flex-shrink-0">
+                            <span class="text-3xl">👨‍🎓</span>
+                        </div>
+                        <div>
+                            <h3 class="heading text-2xl mb-2">Master Artisans</h3>
+                            <p class="text-zinc-400">15-18 years of international experience in haute coiffure and contemporary grooming techniques</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="reveal" style="transition-delay: 0.1s">
+                    <div class="flex items-start gap-6">
+                        <div class="w-16 h-16 rounded-full bg-gradient-to-br from-[#C5A059] to-yellow-700 flex items-center justify-center flex-shrink-0">
+                            <span class="text-3xl">⏰</span>
+                        </div>
+                        <div>
+                            <h3 class="heading text-2xl mb-2">Quick & Efficient</h3>
+                            <p class="text-zinc-400">Respect for your time - precise appointments with zero wait times guaranteed</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="reveal" style="transition-delay: 0.2s">
+                    <div class="flex items-start gap-6">
+                        <div class="w-16 h-16 rounded-full bg-gradient-to-br from-[#C5A059] to-yellow-700 flex items-center justify-center flex-shrink-0">
+                            <span class="text-3xl">✨</span>
+                        </div>
+                        <div>
+                            <h3 class="heading text-2xl mb-2">Premium Products</h3>
+                            <p class="text-zinc-400">Only finest Italian & Swiss grooming brands used - luxury experience in every detail</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="reveal" style="transition-delay: 0.3s">
+                    <div class="flex items-start gap-6">
+                        <div class="w-16 h-16 rounded-full bg-gradient-to-br from-[#C5A059] to-yellow-700 flex items-center justify-center flex-shrink-0">
+                            <span class="text-3xl">🎁</span>
+                        </div>
+                        <div>
+                            <h3 class="heading text-2xl mb-2">Loyalty Rewards</h3>
+                            <p class="text-zinc-400">Every 5 appointments earn complimentary premium service upgrade</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="border-t border-zinc-800 pt-20 mt-20">
+                <h2 class="heading text-5xl gold-text text-center mb-16 reveal">Client Testimonials</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-10">
+                    <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 reveal">
+                        <div class="flex gap-1 mb-4">
+                            <span class="text-yellow-400">⭐⭐⭐⭐⭐</span>
+                        </div>
+                        <p class="text-zinc-300 mb-6 italic">"Marco transformed my look completely. The attention to detail is unmatched. Worth every GEL."</p>
+                        <div class="flex items-center gap-3">
+                            <div class="w-12 h-12 rounded-full bg-gradient-to-br from-[#C5A059] to-yellow-700"></div>
+                            <div>
+                                <p class="font-bold">David Kurtanidze</p>
+                                <p class="text-zinc-500 text-sm">Regular Client</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 reveal" style="transition-delay: 0.1s">
+                        <div class="flex gap-1 mb-4">
+                            <span class="text-yellow-400">⭐⭐⭐⭐⭐</span>
+                        </div>
+                        <p class="text-zinc-300 mb-6 italic">"Alex's color work is absolutely phenomenal. She's booked months in advance for a reason!"</p>
+                        <div class="flex items-center gap-3">
+                            <div class="w-12 h-12 rounded-full bg-gradient-to-br from-[#C5A059] to-yellow-700"></div>
+                            <div>
+                                <p class="font-bold">Natia Bebridze</p>
+                                <p class="text-zinc-500 text-sm">Monthly Client</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 reveal" style="transition-delay: 0.2s">
+                        <div class="flex gap-1 mb-4">
+                            <span class="text-yellow-400">⭐⭐⭐⭐⭐</span>
+                        </div>
+                        <p class="text-zinc-300 mb-6 italic">"Best grooming experience in Tbilisi. The online booking system is so convenient!"</p>
+                        <div class="flex items-center gap-3">
+                            <div class="w-12 h-12 rounded-full bg-gradient-to-br from-[#C5A059] to-yellow-700"></div>
+                            <div>
+                                <p class="font-bold">Giorgi Mezvrishvili</p>
+                                <p class="text-zinc-500 text-sm">First Today Client</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="border-t border-zinc-800 pt-20 mt-20">
+                <h2 class="heading text-5xl gold-text text-center mb-16 reveal">How It Works</h2>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                    <div class="text-center reveal">
+                        <div class="w-20 h-20 rounded-full bg-gradient-to-br from-[#C5A059] to-yellow-700 flex items-center justify-center mx-auto mb-6">
+                            <span class="text-4xl font-bold text-black">1</span>
+                        </div>
+                        <h3 class="heading text-xl mb-3">Choose Artisan</h3>
+                        <p class="text-zinc-400 text-sm">Select your preferred master barber based on their specialty</p>
+                    </div>
+                    <div class="text-center reveal" style="transition-delay: 0.1s">
+                        <div class="w-20 h-20 rounded-full bg-gradient-to-br from-[#C5A059] to-yellow-700 flex items-center justify-center mx-auto mb-6">
+                            <span class="text-4xl font-bold text-black">2</span>
+                        </div>
+                        <h3 class="heading text-xl mb-3">Pick Service</h3>
+                        <p class="text-zinc-400 text-sm">Browse our premium menu customized for your chosen barber</p>
+                    </div>
+                    <div class="text-center reveal" style="transition-delay: 0.2s">
+                        <div class="w-20 h-20 rounded-full bg-gradient-to-br from-[#C5A059] to-yellow-700 flex items-center justify-center mx-auto mb-6">
+                            <span class="text-4xl font-bold text-black">3</span>
+                        </div>
+                        <h3 class="heading text-xl mb-3">Book Time</h3>
+                        <p class="text-zinc-400 text-sm">Reserve your perfect slot instantly - no waiting lists</p>
+                    </div>
+                    <div class="text-center reveal" style="transition-delay: 0.3s">
+                        <div class="w-20 h-20 rounded-full bg-gradient-to-br from-[#C5A059] to-yellow-700 flex items-center justify-center mx-auto mb-6">
+                            <span class="text-4xl font-bold text-black">4</span>
+                        </div>
+                        <h3 class="heading text-xl mb-3">Enjoy Luxury</h3>
+                        <p class="text-zinc-400 text-sm">Relax & experience world-class grooming excellence</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="border-t border-zinc-800 pt-20 mt-20">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div class="bg-gradient-to-br from-zinc-900 to-zinc-950 border border-[#C5A059]/30 rounded-2xl p-8 text-center reveal">
+                        <div class="text-5xl mb-4">💯</div>
+                        <h3 class="heading text-2xl gold-text mb-3">100% Satisfaction</h3>
+                        <p class="text-zinc-400">Not happy? Free touch-up within 7 days. Your happiness is our guarantee.</p>
+                    </div>
+                    <div class="bg-gradient-to-br from-zinc-900 to-zinc-950 border border-[#C5A059]/30 rounded-2xl p-8 text-center reveal" style="transition-delay: 0.1s">
+                        <div class="text-5xl mb-4">🔄</div>
+                        <h3 class="heading text-2xl gold-text mb-3">Easy Rescheduling</h3>
+                        <p class="text-zinc-400">Plans changed? Reschedule up to 24 hours before with a single click.</p>
+                    </div>
+                    <div class="bg-gradient-to-br from-zinc-900 to-zinc-950 border border-[#C5A059]/30 rounded-2xl p-8 text-center reveal" style="transition-delay: 0.2s">
+                        <div class="text-5xl mb-4">🎟️</div>
+                        <h3 class="heading text-2xl gold-text mb-3">Gift Cards</h3>
+                        <p class="text-zinc-400">Perfect gift - digital gift cards available. Give the luxury of style.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="booking" class="py-32 px-6 bg-black">
+        <div class="max-w-4xl mx-auto">
+            <div class="text-center mb-24 reveal">
+                <h2 class="heading text-7xl gold-text mb-6">Online Reservation</h2>
+                <p class="text-zinc-400 text-lg">Secure your preferred time slot with our world-class artisans</p>
+            </div>
+            <div class="booking-section reveal">
+                <div class="text-center mb-8">
+                    <h3 class="text-2xl font-light mb-4">Quick Booking</h3>
+                    <p class="text-zinc-500 text-sm mb-6">Real-time availability across all services</p>
+                </div>
+                <button onclick="openBookingModal()" class="w-full btn-primary py-4 text-lg">Start Reservation</button>
             </div>
         </div>
     </section>
@@ -158,41 +998,767 @@
                     <p>17 Giorgi Akhvlediani St, Vera, Tbilisi</p>
                     <p>+995 555 12 34 56</p>
                     <p class="text-sm tracking-widest uppercase">Mon — Sun: 10:00 — 22:00</p>
+                    <p class="text-xs text-zinc-600 mt-4">hello@partizan.studio</p>
                 </div>
             </div>
             <div class="map-frame h-[400px] rounded-3xl overflow-hidden border border-zinc-800 reveal" style="transition-delay: 0.2s">
                 <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2978.892095655452!2d44.7909383!3d41.7012354!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x40440cc0a8096bed%3A0x3d2d8d4519ff4b6d!2s17%20Giorgi%20Akhvlediani%20St%2C%20T'bilisi!5e0!3m2!1sen!2sge!4v1700000000000!5m2!1sen!2sge" width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy"></iframe>
             </div>
         </div>
-        <div class="mt-32 text-center text-[10px] tracking-[0.4em] text-zinc-700 uppercase">
-            © 2026 Partizan Aesthetics. International Standards of Grooming.
+        <div class="mt-32 pt-8 border-t border-zinc-900 text-center text-[10px] tracking-[0.4em] text-zinc-700 uppercase flex items-center justify-center gap-4">
+            <div>© 2026 Partizan Aesthetics. International Standards of Grooming.</div>
+            <button onclick="openAdminPanel()" class="text-zinc-600 hover:text-zinc-400 transition" title="Barber Dashboard">⚙</button>
         </div>
     </footer>
 
+    <div id="bookingModal" class="modal-overlay" onclick="if(event.target.id === 'bookingModal') closeBookingModal()">
+        <div class="modal-content">
+            <button onclick="closeBookingModal()" class="absolute top-6 right-6 text-zinc-500 hover:text-white text-2xl">×</button>
+
+            <div class="progress-bar">
+                <div id="progressFill" class="progress-fill" style="width: 14%"></div>
+            </div>
+
+            <div id="step1" class="booking-step active">
+                <h2 class="heading text-3xl gold-text mb-2">Select Your Barber</h2>
+                <p class="text-zinc-500 text-sm mb-6">Each master has unique expertise and availability</p>
+                <div class="barber-cards-grid mb-8" id="barberCards"></div>
+                <button onclick="nextStep(2)" id="nextBtn1" class="w-full btn-primary py-3" disabled>Continue</button>
+            </div>
+
+            <div id="step2" class="booking-step">
+                <h2 class="heading text-3xl gold-text mb-6">Select Service</h2>
+                <div class="space-y-3 mb-8" id="serviceOptions"></div>
+                <div class="flex gap-3">
+                    <button onclick="prevStep(1)" class="flex-1 btn-secondary py-3">Back</button>
+                    <button onclick="nextStep(3)" id="nextBtn2" class="flex-1 btn-primary py-3" disabled>Continue</button>
+                </div>
+            </div>
+
+            <div id="step3" class="booking-step">
+                <h2 class="heading text-3xl gold-text mb-6">Select Date</h2>
+                <div class="mb-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <button onclick="previousMonth()" class="nav-btn">← Previous</button>
+                        <span id="currentMonth" class="text-xl font-semibold"></span>
+                        <button onclick="nextMonth()" class="nav-btn">Next →</button>
+                    </div>
+                    <div class="date-selector" id="dateSelector"></div>
+                </div>
+                <div class="flex gap-3">
+                    <button onclick="prevStep(2)" class="flex-1 btn-secondary py-3">Back</button>
+                    <button onclick="nextStep(4)" id="nextBtn3" class="flex-1 btn-primary py-3" disabled>Select Time</button>
+                </div>
+            </div>
+
+            <div id="step4" class="booking-step">
+                <h2 class="heading text-3xl gold-text mb-2">Select Time Slot</h2>
+                <p class="text-zinc-500 text-sm mb-6">Available: 10:00 - 22:00</p>
+                <div class="availability-legend mb-6">
+                    <div class="legend-item">
+                        <div class="legend-box legend-available"></div>
+                        <span>Available</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-box legend-booked"></div>
+                        <span>Booked</span>
+                    </div>
+                </div>
+                <div class="grid grid-cols-3 gap-2 mb-8 sm:grid-cols-4 md:grid-cols-6" id="timeSlots"></div>
+                <div class="flex gap-3">
+                    <button onclick="prevStep(3)" class="flex-1 btn-secondary py-3">Back</button>
+                    <button onclick="nextStep(5)" id="nextBtn4" class="flex-1 btn-primary py-3" disabled>Confirm</button>
+                </div>
+            </div>
+
+            <div id="step5" class="booking-step">
+                <h2 class="heading text-3xl gold-text mb-6">Your Details</h2>
+                <div class="space-y-4 mb-8">
+                    <input type="text" placeholder="Full Name" id="fullName" class="input-field w-full" required>
+                    <input type="email" placeholder="Email Address" id="email" class="input-field w-full" required>
+                    <input type="tel" placeholder="Phone Number" id="phone" class="input-field w-full" required>
+                    <textarea placeholder="Special requests or notes" id="notes" class="input-field w-full" rows="3"></textarea>
+                </div>
+                <div class="flex gap-3">
+                    <button onclick="prevStep(4)" class="flex-1 btn-secondary py-3">Back</button>
+                    <button onclick="nextStep(6)" id="nextBtn5" class="flex-1 btn-primary py-3">Review Booking</button>
+                </div>
+            </div>
+
+            <div id="step6" class="booking-step">
+                <h2 class="heading text-3xl gold-text mb-8">Booking Confirmation</h2>
+                <div class="confirmation-badge">
+                    <div class="confirmation-row">
+                        <span class="confirmation-label">Barber</span>
+                        <span class="confirmation-value" id="confirmBarber">-</span>
+                    </div>
+                    <div class="confirmation-row">
+                        <span class="confirmation-label">Service</span>
+                        <span class="confirmation-value" id="confirmService">-</span>
+                    </div>
+                    <div class="confirmation-row">
+                        <span class="confirmation-label">Price</span>
+                        <span class="confirmation-value" id="confirmPrice">-</span>
+                    </div>
+                    <div class="confirmation-row">
+                        <span class="confirmation-label">Date</span>
+                        <span class="confirmation-value" id="confirmDate">-</span>
+                    </div>
+                    <div class="confirmation-row">
+                        <span class="confirmation-label">Time</span>
+                        <span class="confirmation-value" id="confirmTime">-</span>
+                    </div>
+                    <div class="confirmation-row">
+                        <span class="confirmation-label">Name</span>
+                        <span class="confirmation-value text-sm" id="confirmName">-</span>
+                    </div>
+                    <div class="confirmation-row">
+                        <span class="confirmation-label">Email</span>
+                        <span class="confirmation-value text-sm" id="confirmEmail">-</span>
+                    </div>
+                    <div class="confirmation-row">
+                        <span class="confirmation-label">Phone</span>
+                        <span class="confirmation-value text-sm" id="confirmPhone">-</span>
+                    </div>
+                </div>
+                <div class="flex gap-3">
+                    <button onclick="prevStep(5)" class="flex-1 btn-secondary py-3">Back</button>
+                    <button onclick="completeBooking()" class="flex-1 btn-primary py-3">Confirm & Book</button>
+                </div>
+            </div>
+
+            <div id="step7" class="booking-step">
+                <div class="text-center py-12">
+                    <div class="mb-6">
+                        <div class="inline-block w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center mb-6">
+                            <svg class="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <h2 class="heading text-4xl gold-text mb-4">Booking Confirmed!</h2>
+                    <p class="text-zinc-400 mb-2">Your appointment has been successfully reserved</p>
+                    <p class="text-sm text-zinc-600 mb-8">A confirmation email has been sent to your address</p>
+                    <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-6 mb-8 text-left">
+                        <p class="text-sm text-zinc-500 mb-3">Booking Details</p>
+                        <p class="text-lg font-semibold" id="finalConfirmText"></p>
+                    </div>
+                    <button onclick="closeBookingModal()" class="w-full btn-primary py-3">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="adminModal" class="modal-overlay" onclick="if(event.target.id === 'adminModal') closeAdminPanel()">
+        <div class="modal-content" style="max-width: 900px; max-height: 90vh;">
+            <button onclick="closeAdminPanel()" class="absolute top-6 right-6 text-zinc-500 hover:text-white text-2xl">×</button>
+
+            <div class="flex items-center justify-between mb-8">
+                <h2 class="heading text-4xl gold-text">Barber Dashboard</h2>
+                <div class="flex gap-2">
+                    <button onclick="switchAdminTab('today')" class="admin-tab-btn active" id="todayTab">Today</button>
+                    <button onclick="switchAdminTab('all')" class="admin-tab-btn" id="allTab">All Bookings</button>
+                    <button onclick="switchAdminTab('add')" class="admin-tab-btn" id="addTab">+ Phone Booking</button>
+                </div>
+            </div>
+
+            <div id="adminToday" class="admin-tab-content">
+                <h3 class="text-xl font-semibold mb-4 text-zinc-300">Today's Schedule</h3>
+                <div id="todaySchedule" class="space-y-3 max-h-[60vh] overflow-y-auto"></div>
+            </div>
+
+            <div id="adminAll" class="admin-tab-content hidden">
+                <h3 class="text-xl font-semibold mb-4 text-zinc-300">All Appointments</h3>
+                <div class="mb-4 flex gap-2">
+                    <input type="date" id="filterDate" class="input-field">
+                    <button onclick="filterBookingsByDate()" class="btn-secondary px-4 py-2">Filter</button>
+                    <button onclick="clearDateFilter()" class="btn-secondary px-4 py-2">Clear</button>
+                </div>
+                <div id="allBookings" class="space-y-2 max-h-[55vh] overflow-y-auto"></div>
+            </div>
+
+            <div id="adminAdd" class="admin-tab-content hidden">
+                <h3 class="text-xl font-semibold mb-6 text-zinc-300">Add Phone Call Booking</h3>
+                <div class="space-y-4">
+                    <select id="manualBarber" class="input-field w-full">
+                        <option value="">Select Barber</option>
+                        <option value="marco">Marco Rossi - Precision & Fades</option>
+                        <option value="alex">Alex Chen - Color & Styling</option>
+                        <option value="vikram">Vikram Singh - All Services</option>
+                    </select>
+                    <select id="manualService" class="input-field w-full">
+                        <option value="">Select Service</option>
+                        <option value="Signature Skin Fade|50">Signature Skin Fade - 50 GEL</option>
+                        <option value="Beard Architecture|35">Beard Architecture - 35 GEL</option>
+                        <option value="Executive Package|80">Executive Package - 80 GEL</option>
+                        <option value="Advanced Color Melt|180">Advanced Color Melt - 180+ GEL</option>
+                        <option value="Precision Shear Cut|75">Precision Shear Cut - 75 GEL</option>
+                        <option value="Hair Treatment|120">Hair Treatment Therapy - 120 GEL</option>
+                    </select>
+                    <input type="date" id="manualDate" class="input-field w-full">
+                    <select id="manualTime" class="input-field w-full">
+                        <option value="">Select Time...</option>
+                    </select>
+                    <input type="text" id="manualName" placeholder="Customer Name" class="input-field w-full">
+                    <input type="email" id="manualEmail" placeholder="Email (optional)" class="input-field w-full">
+                    <input type="tel" id="manualPhone" placeholder="Phone Number" class="input-field w-full">
+                    <textarea id="manualNotes" placeholder="Notes" class="input-field w-full" rows="3"></textarea>
+                    <div class="flex gap-2">
+                        <button onclick="addManualBooking()" class="flex-1 btn-primary py-3">Add Booking</button>
+                        <button onclick="closeAdminPanel()" class="flex-1 btn-secondary py-3">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
-        // Language Logic
         const translations = {
-            en: { book_now: "Book Seat", hero_title: "PARTIZAN", hero_subtitle: "Estd. 2026", men_label: "Barbers", women_label: "Salon" },
-            ge: { book_now: "დაჯავშნა", hero_title: "პარტიზანი", hero_subtitle: "2026 წლიდან", men_label: "ოსტატები", women_label: "სალონი" },
-            ru: { book_now: "Запись", hero_title: "ПАРТИЗАН", hero_subtitle: "Осн. 2026", men_label: "Барберы", women_label: "Салон" }
+            en: { book_now: "Book Seat", hero_title: "PARTIZAN", hero_subtitle: "Estd. 2026", men_label: "Master Barbers", women_label: "Salon Artistry", hero_top: "Vera • Tbilisi" },
+            ge: { book_now: "დაჯავშნა", hero_title: "პარტიზანი", hero_subtitle: "2026 წლიდან", men_label: "ოსტატი ბარბერი", women_label: "სალონი", hero_top: "ვერა • თბილისი" },
+            ru: { book_now: "Запись", hero_title: "ПАРТИЗАН", hero_subtitle: "Осн. 2026", men_label: "Барберы", women_label: "Салон", hero_top: "Вера • Тбилиси" }
         };
+
+        let bookingData = {
+            barber: null,
+            service: null,
+            date: null,
+            time: null,
+            name: null,
+            email: null,
+            phone: null,
+            notes: null
+        };
+
+        const barbers = [
+            {
+                id: 'marco',
+                name: 'Marco Rossi',
+                specialty: 'Precision & Fades',
+                experience: '15 years',
+                avatar: '👨‍💼',
+                specialities: ['Signature Skin Fade', 'Beard Architecture', 'Executive Package']
+            },
+            {
+                id: 'alex',
+                name: 'Alex Chen',
+                specialty: 'Color & Styling',
+                experience: '12 years',
+                avatar: '👨‍🦱',
+                specialities: ['Advanced Color Melt', 'Precision Shear Cut', 'Hair Treatment']
+            },
+            {
+                id: 'vikram',
+                name: 'Vikram Singh',
+                specialty: 'All Services',
+                experience: '18 years',
+                avatar: '👨‍🎤',
+                specialities: ['Signature Skin Fade', 'Beard Architecture', 'Executive Package', 'Advanced Color Melt', 'Precision Shear Cut', 'Hair Treatment']
+            }
+        ];
+
+        const services = [
+            { name: 'Signature Skin Fade', price: '50', description: 'Precision clipper work with hot towel finish' },
+            { name: 'Beard Architecture', price: '35', description: 'Steam therapy, line-up, and luxury oil' },
+            { name: 'Executive Package', price: '80', description: 'Haircut + beard sculpting + facial massage' },
+            { name: 'Advanced Color Melt', price: '180', description: 'Bespoke balayage for depth and dimension' },
+            { name: 'Precision Shear Cut', price: '75', description: 'Custom structure based on face shape' },
+            { name: 'Hair Treatment', price: '120', description: 'Rejuvenating keratin infusion and scalp massage' }
+        ];
+
+        let currentMonth = new Date();
+        let allBookings = JSON.parse(localStorage.getItem('partizanBookings')) || [];
+
+        function getBookedSlotsByBarber(barberId, dateStr) {
+            const slots = [];
+            allBookings.forEach(booking => {
+                if (booking.barber === barberId && booking.date === dateStr && booking.status !== 'cancelled') {
+                    slots.push(booking.time);
+                }
+            });
+            return slots;
+        }
 
         function setLanguage(l) {
             document.querySelectorAll('[data-i18n]').forEach(el => el.innerText = translations[l][el.getAttribute('data-i18n')]);
             localStorage.setItem('lang', l);
         }
 
-        // Animation & Scroll Logic
+        function openBookingModal() {
+            document.getElementById('bookingModal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+            loadBarberCards();
+            initializeCalendar();
+        }
+
+        function closeBookingModal() {
+            document.getElementById('bookingModal').classList.remove('active');
+            document.body.style.overflow = 'auto';
+            resetBooking();
+        }
+
+        function resetBooking() {
+            bookingData = { barber: null, service: null, date: null, time: null, name: null, email: null, phone: null, notes: null };
+            
+            document.querySelectorAll('input[name="barber"]').forEach(el => el.checked = false);
+            document.querySelectorAll('input[name="service"]').forEach(el => el.checked = false);
+            
+            document.querySelectorAll('.barber-card').forEach(el => el.classList.remove('selected'));
+            document.querySelectorAll('.service-option').forEach(el => el.classList.remove('selected'));
+            
+            document.getElementById('fullName').value = '';
+            document.getElementById('email').value = '';
+            document.getElementById('phone').value = '';
+            document.getElementById('notes').value = '';
+            
+            document.getElementById('nextBtn1').disabled = true;
+            document.getElementById('nextBtn2').disabled = true;
+            document.getElementById('nextBtn3').disabled = true;
+            document.getElementById('nextBtn4').disabled = true;
+            document.getElementById('nextBtn5').disabled = true;
+            
+            goToStep(1);
+        }
+
+        function loadBarberCards() {
+            const container = document.getElementById('barberCards');
+            container.innerHTML = barbers.map(barber => `
+                <label class="barber-card">
+                    <input type="radio" name="barber" value="${barber.id}" onclick="selectBarber(this)">
+                    <div class="barber-name">${barber.avatar} ${barber.name}</div>
+                    <div class="barber-specialty">${barber.specialty}</div>
+                    <div class="barber-extra">${barber.experience} experience</div>
+                </label>
+            `).join('');
+        }
+
+        function selectBarber(el) {
+            bookingData.barber = el.value;
+            document.querySelectorAll('.barber-card').forEach(e => e.classList.remove('selected'));
+            el.closest('.barber-card').classList.add('selected');
+            document.getElementById('nextBtn1').disabled = false;
+            loadServiceOptions();
+        }
+
+        function loadServiceOptions() {
+            const container = document.getElementById('serviceOptions');
+            const barber = barbers.find(b => b.id === bookingData.barber);
+            
+            container.innerHTML = barber.specialities.map(serviceName => {
+                const service = services.find(s => s.name === serviceName);
+                return `
+                    <label class="service-option">
+                        <input type="radio" name="service" value="${service.name}|${service.price}" onclick="selectService(this)">
+                        <div class="service-details">
+                            <span class="service-name">${service.name}</span>
+                            <span class="service-price">${service.price} GEL</span>
+                        </div>
+                        <div class="service-description">${service.description}</div>
+                    </label>
+                `;
+            }).join('');
+        }
+
+        function goToStep(step) {
+            document.querySelectorAll('.booking-step').forEach(el => el.classList.remove('active'));
+            document.getElementById(`step${step}`).classList.add('active');
+            document.getElementById('progressFill').style.width = (step / 7 * 100) + '%';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function nextStep(step) {
+            if (validateStep(step - 1)) {
+                goToStep(step);
+            }
+        }
+
+        function prevStep(step) {
+            goToStep(step);
+        }
+
+        function validateStep(step) {
+            if (step === 1) return bookingData.barber !== null;
+            if (step === 2) return bookingData.service !== null;
+            if (step === 3) return bookingData.date !== null;
+            if (step === 4) return bookingData.time !== null;
+            if (step === 5) {
+                const name = document.getElementById('fullName').value.trim();
+                const email = document.getElementById('email').value.trim();
+                const phone = document.getElementById('phone').value.trim();
+                if (!name || !email || !phone) {
+                    alert('Please fill in all required fields');
+                    return false;
+                }
+                bookingData.name = name;
+                bookingData.email = email;
+                bookingData.phone = phone;
+                bookingData.notes = document.getElementById('notes').value;
+                updateConfirmation();
+                return true;
+            }
+            return true;
+        }
+
+        function selectService(el) {
+            const parts = el.value.split('|');
+            bookingData.service = el.value;
+            bookingData.price = parts[1];
+            
+            document.querySelectorAll('.service-option').forEach(e => e.classList.remove('selected'));
+            el.closest('.service-option').classList.add('selected');
+            document.getElementById('nextBtn2').disabled = false;
+        }
+
+        function initializeCalendar() {
+            currentMonth = new Date();
+            renderCalendar();
+        }
+
+        function renderCalendar() {
+            const year = currentMonth.getFullYear();
+            const month = currentMonth.getMonth();
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            const daysInMonth = lastDay.getDate();
+            const startingDayOfWeek = firstDay.getDay();
+
+            document.getElementById('currentMonth').innerText = currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+            const dateSelector = document.getElementById('dateSelector');
+            dateSelector.innerHTML = '';
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            for (let i = 0; i < startingDayOfWeek; i++) {
+                const empty = document.createElement('div');
+                empty.className = 'date-box disabled opacity-0';
+                dateSelector.appendChild(empty);
+            }
+
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateBox = document.createElement('div');
+                const date = new Date(year, month, day);
+                const dateStr = date.toISOString().split('T')[0];
+                const isPast = date < today;
+
+                dateBox.className = 'date-box' + (isPast ? ' disabled' : '');
+                dateBox.innerHTML = `<span class="text-sm font-semibold">${day}</span><span class="text-xs text-zinc-500">${date.toLocaleDateString('en-US', { weekday: 'short' }).substring(0, 1)}</span>`;
+
+                if (!isPast) {
+                    dateBox.onclick = () => selectDate(dateStr, dateBox);
+                }
+
+                dateSelector.appendChild(dateBox);
+            }
+        }
+
+        function selectDate(dateStr, element) {
+            bookingData.date = dateStr;
+            document.querySelectorAll('.date-box').forEach(el => el.classList.remove('selected'));
+            element.classList.add('selected');
+            document.getElementById('nextBtn3').disabled = false;
+            renderTimeSlots(dateStr);
+        }
+
+        function renderTimeSlots(dateStr) {
+            const timeSlots = document.getElementById('timeSlots');
+            timeSlots.innerHTML = '';
+            const booked = getBookedSlotsByBarber(bookingData.barber, dateStr);
+
+            const startHour = 10;
+            const endHour = 22;
+
+            for (let hour = startHour; hour < endHour; hour++) {
+                const time = `${String(hour).padStart(2, '0')}:00`;
+                const slot = document.createElement('button');
+                slot.className = 'time-slot' + (booked.includes(time) ? ' booked' : '');
+                slot.innerText = time;
+                slot.disabled = booked.includes(time);
+                slot.type = 'button';
+
+                if (!booked.includes(time)) {
+                    slot.onclick = () => selectTime(time, slot);
+                } else {
+                    slot.innerText = time + ' (Booked)';
+                }
+
+                timeSlots.appendChild(slot);
+            }
+        }
+
+        function selectTime(time, element) {
+            bookingData.time = time;
+            document.querySelectorAll('.time-slot').forEach(el => el.classList.remove('selected'));
+            element.classList.add('selected');
+            document.getElementById('nextBtn4').disabled = false;
+        }
+
+        function updateConfirmation() {
+            const [serviceName, price] = bookingData.service.split('|');
+            const date = new Date(bookingData.date);
+            const dateStr = date.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            const barber = barbers.find(b => b.id === bookingData.barber);
+
+            document.getElementById('confirmBarber').innerText = barber.name;
+            document.getElementById('confirmService').innerText = serviceName;
+            document.getElementById('confirmPrice').innerText = price + ' GEL';
+            document.getElementById('confirmDate').innerText = dateStr;
+            document.getElementById('confirmTime').innerText = bookingData.time;
+            document.getElementById('confirmName').innerText = bookingData.name;
+            document.getElementById('confirmEmail').innerText = bookingData.email;
+            document.getElementById('confirmPhone').innerText = bookingData.phone;
+        }
+
+        function completeBooking() {
+            const [serviceName, price] = bookingData.service.split('|');
+            const date = new Date(bookingData.date);
+            const dateStr = date.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            const barber = barbers.find(b => b.id === bookingData.barber);
+
+            const newBooking = {
+                id: Date.now(),
+                barber: bookingData.barber,
+                barberName: barber.name,
+                service: serviceName,
+                price: price,
+                date: bookingData.date,
+                time: bookingData.time,
+                name: bookingData.name,
+                email: bookingData.email,
+                phone: bookingData.phone,
+                notes: bookingData.notes,
+                createdAt: new Date().toISOString(),
+                source: 'website',
+                status: 'confirmed'
+            };
+
+            allBookings.push(newBooking);
+            localStorage.setItem('partizanBookings', JSON.stringify(allBookings));
+
+            document.getElementById('finalConfirmText').innerHTML = `<span class="block text-zinc-400">Appointment with ${barber.name}</span><span class="gold-text">${serviceName}</span><span class="block text-zinc-500 text-sm mt-2">${dateStr} at ${bookingData.time}</span>`;
+
+            document.getElementById('bookingModal').classList.add('success-animation');
+            goToStep(7);
+
+            setTimeout(() => {
+                document.getElementById('bookingModal').classList.remove('success-animation');
+            }, 600);
+        }
+
+        function nextMonth() {
+            currentMonth.setMonth(currentMonth.getMonth() + 1);
+            renderCalendar();
+        }
+
+        function previousMonth() {
+            currentMonth.setMonth(currentMonth.getMonth() - 1);
+            renderCalendar();
+        }
+
+        function openAdminPanel() {
+            document.getElementById('adminModal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+            loadAdminDashboard();
+        }
+
+        function closeAdminPanel() {
+            document.getElementById('adminModal').classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
+
+        function switchAdminTab(tab) {
+            document.querySelectorAll('.admin-tab-btn').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.admin-tab-content').forEach(el => el.classList.add('hidden'));
+            
+            document.getElementById(tab + 'Tab').classList.add('active');
+            document.getElementById('admin' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.remove('hidden');
+
+            if (tab === 'today') loadTodaySchedule();
+            if (tab === 'all') loadAllBookings();
+            if (tab === 'add') populateTimeOptions();
+        }
+
+        function loadAdminDashboard() {
+            loadTodaySchedule();
+        }
+
+        function loadTodaySchedule() {
+            const today = new Date().toISOString().split('T')[0];
+            const todayBookings = allBookings.filter(b => b.date === today && b.status !== 'cancelled').sort((a, b) => a.time.localeCompare(b.time));
+
+            const container = document.getElementById('todaySchedule');
+            
+            if (todayBookings.length === 0) {
+                container.innerHTML = '<div class="text-center text-zinc-500 py-8">No appointments today</div>';
+                return;
+            }
+
+            container.innerHTML = todayBookings.map(booking => createBookingCard(booking)).join('');
+        }
+
+        function loadAllBookings(filterDate = null) {
+            let bookings = allBookings.filter(b => b.status !== 'cancelled');
+            
+            if (filterDate) {
+                bookings = bookings.filter(b => b.date === filterDate);
+            }
+
+            bookings.sort((a, b) => new Date(b.date) - new Date(a.date) || a.time.localeCompare(b.time));
+
+            const container = document.getElementById('allBookings');
+            
+            if (bookings.length === 0) {
+                container.innerHTML = '<div class="text-center text-zinc-500 py-8">No appointments found</div>';
+                return;
+            }
+
+            container.innerHTML = bookings.map(booking => createBookingCard(booking)).join('');
+        }
+
+        function createBookingCard(booking) {
+            const dateObj = new Date(booking.date);
+            const dateStr = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' });
+            
+            return `
+                <div class="booking-card">
+                    <div class="booking-card-header">
+                        <div>
+                            <div class="booking-time">${booking.time}</div>
+                            <div class="booking-service">${booking.service}</div>
+                            <div class="booking-customer">${booking.name}</div>
+                        </div>
+                        <div class="text-right">
+                            <span class="status-badge status-${booking.status}">${booking.status}</span>
+                            <div class="text-xs text-zinc-500 mt-2">${dateStr}</div>
+                        </div>
+                    </div>
+                    <div class="booking-contact">
+                        <div>📞 ${booking.phone}</div>
+                        <div>📧 ${booking.email}</div>
+                        ${booking.notes ? `<div>📝 ${booking.notes}</div>` : ''}
+                        ${booking.source === 'phone' ? '<div class="text-xs text-zinc-500 mt-2">Via Phone Call</div>' : ''}
+                    </div>
+                    <div class="booking-actions">
+                        ${booking.status !== 'completed' ? `<button onclick="markComplete(${booking.id})" class="booking-action-btn btn-complete">✓ Complete</button>` : ''}
+                        <button onclick="deleteBooking(${booking.id})" class="booking-action-btn btn-delete">Delete</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function markComplete(bookingId) {
+            const booking = allBookings.find(b => b.id === bookingId);
+            if (booking) {
+                booking.status = 'completed';
+                localStorage.setItem('partizanBookings', JSON.stringify(allBookings));
+                loadAdminDashboard();
+            }
+        }
+
+        function deleteBooking(bookingId) {
+            if (confirm('Are you sure you want to delete this booking?')) {
+                allBookings = allBookings.filter(b => b.id !== bookingId);
+                localStorage.setItem('partizanBookings', JSON.stringify(allBookings));
+                loadAdminDashboard();
+            }
+        }
+
+        function filterBookingsByDate() {
+            const filterDate = document.getElementById('filterDate').value;
+            if (filterDate) {
+                loadAllBookings(filterDate);
+            } else {
+                loadAllBookings();
+            }
+        }
+
+        function clearDateFilter() {
+            document.getElementById('filterDate').value = '';
+            loadAllBookings();
+        }
+
+        function populateTimeOptions() {
+            const selectedBarber = document.getElementById('manualBarber').value;
+            const selectedDate = document.getElementById('manualDate').value;
+            const timeSelect = document.getElementById('manualTime');
+            timeSelect.innerHTML = '<option value="">Select Time...</option>';
+
+            if (!selectedDate || !selectedBarber) return;
+
+            const booked = getBookedSlotsByBarber(selectedBarber, selectedDate);
+            const startHour = 10;
+            const endHour = 22;
+
+            for (let hour = startHour; hour < endHour; hour++) {
+                const time = `${String(hour).padStart(2, '0')}:00`;
+                if (!booked.includes(time)) {
+                    const option = document.createElement('option');
+                    option.value = time;
+                    option.innerText = time;
+                    timeSelect.appendChild(option);
+                }
+            }
+        }
+
+        function addManualBooking() {
+            const barber = document.getElementById('manualBarber').value;
+            const service = document.getElementById('manualService').value;
+            const date = document.getElementById('manualDate').value;
+            const time = document.getElementById('manualTime').value;
+            const name = document.getElementById('manualName').value.trim();
+            const email = document.getElementById('manualEmail').value.trim();
+            const phone = document.getElementById('manualPhone').value.trim();
+            const notes = document.getElementById('manualNotes').value.trim();
+
+            if (!barber || !service || !date || !time || !name || !phone) {
+                alert('Please fill in all required fields (Barber, Service, Date, Time, Name, Phone)');
+                return;
+            }
+
+            const [serviceName, price] = service.split('|');
+            const barberObj = barbers.find(b => b.id === barber);
+
+            const newBooking = {
+                id: Date.now(),
+                barber: barber,
+                barberName: barberObj.name,
+                service: serviceName,
+                price: price,
+                date: date,
+                time: time,
+                name: name,
+                email: email || 'N/A',
+                phone: phone,
+                notes: notes,
+                createdAt: new Date().toISOString(),
+                source: 'phone',
+                status: 'confirmed'
+            };
+
+            allBookings.push(newBooking);
+            localStorage.setItem('partizanBookings', JSON.stringify(allBookings));
+
+            document.getElementById('manualBarber').value = '';
+            document.getElementById('manualService').value = '';
+            document.getElementById('manualDate').value = '';
+            document.getElementById('manualTime').value = '';
+            document.getElementById('manualName').value = '';
+            document.getElementById('manualEmail').value = '';
+            document.getElementById('manualPhone').value = '';
+            document.getElementById('manualNotes').value = '';
+
+            alert('Booking added successfully!');
+            switchAdminTab('today');
+        }
+
         window.addEventListener('scroll', () => {
-            // Reveal on scroll
             document.querySelectorAll('.reveal').forEach(el => {
                 if(el.getBoundingClientRect().top < window.innerHeight * 0.85) el.classList.add('active');
             });
-            // Progress Bar
             const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
             const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
             document.getElementById("progress").style.width = (winScroll / height) * 100 + "%";
-            // Parallax Hero
             document.getElementById('hero-img').style.transform = `translateY(${winScroll * 0.4}px)`;
         });
 
@@ -201,7 +1767,66 @@
             setTimeout(() => document.querySelectorAll('.reveal').forEach(el => {
                 if(el.getBoundingClientRect().top < window.innerHeight) el.classList.add('active');
             }), 300);
+
+            document.getElementById('manualBarber')?.addEventListener('change', populateTimeOptions);
+            document.getElementById('manualDate')?.addEventListener('change', populateTimeOptions);
+
+            if (allBookings.length === 0) {
+                const demoBookings = [
+                    {
+                        id: 1,
+                        barber: 'marco',
+                        barberName: 'Marco Rossi',
+                        service: 'Signature Skin Fade',
+                        price: '50',
+                        date: new Date().toISOString().split('T')[0],
+                        time: '14:00',
+                        name: 'John Doe',
+                        email: 'john@example.com',
+                        phone: '+995 591 234567',
+                        notes: 'First time customer',
+                        createdAt: new Date().toISOString(),
+                        source: 'website',
+                        status: 'confirmed'
+                    },
+                    {
+                        id: 2,
+                        barber: 'vikram',
+                        barberName: 'Vikram Singh',
+                        service: 'Beard Architecture',
+                        price: '35',
+                        date: new Date().toISOString().split('T')[0],
+                        time: '16:30',
+                        name: 'David Smith',
+                        email: 'david@example.com',
+                        phone: '+995 595 987654',
+                        notes: 'Regular customer',
+                        createdAt: new Date().toISOString(),
+                        source: 'phone',
+                        status: 'confirmed'
+                    },
+                    {
+                        id: 3,
+                        barber: 'alex',
+                        barberName: 'Alex Chen',
+                        service: 'Advanced Color Melt',
+                        price: '180',
+                        date: new Date(Date.now() + 86400000).toISOString().split('T')[0],
+                        time: '11:00',
+                        name: 'Maria Garcia',
+                        email: 'maria@example.com',
+                        phone: '+995 551 123456',
+                        notes: 'Prefers morning appointments',
+                        createdAt: new Date().toISOString(),
+                        source: 'website',
+                        status: 'confirmed'
+                    }
+                ];
+                allBookings = demoBookings;
+                localStorage.setItem('partizanBookings', JSON.stringify(allBookings));
+            }
         };
     </script>
+    </div>
 </body>
 </html>
