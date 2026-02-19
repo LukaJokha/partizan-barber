@@ -7,6 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@100;300;400;700&display=swap" rel="stylesheet">
     <style>
         :root { --gold: #C5A059; --dark: #080808; }
@@ -1266,20 +1267,91 @@
             { name: 'Hair Treatment', price: '120', description: 'Rejuvenating keratin infusion and scalp massage' }
         ];
 
-        // Cloud Sync using localStorage with polling
+        // ⚠️ SUPABASE CONFIGURATION - ADD YOUR CREDENTIALS HERE
+        const SUPABASE_URL = 'https://ujmzvpcygyzwpkatrhdw.supabase.co'; // Replace with your Supabase URL
+        const SUPABASE_KEY = 'sb_secret_024oAGcmOo5O5xb6DRxUjg_0yiXHvHu';     // Replace with your Supabase Anon Key
+        
+        let supabase = null;
+        let supabaseReady = false;
+
+        // Initialize Supabase
+        function initializeSupabase() {
+            if (!SUPABASE_URL.startsWith('http') || SUPABASE_KEY === 'YOUR_SUPABASE_ANON_KEY') {
+                console.log('⚠️ Supabase not configured - using localStorage fallback');
+                console.log('Get credentials from: supabase.com → Create Project → Settings → API');
+                initializeDeviceSync();
+                return;
+            }
+            
+            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+            supabaseReady = true;
+            loadAllBookingsFromCloud();
+            setupRealtimeListener();
+        }
+
+        // Load all bookings from Supabase
+        async function loadAllBookingsFromCloud() {
+            if (!supabaseReady) return;
+            
+            try {
+                const { data, error } = await supabase.from('bookings').select('*');
+                if (!error && data) {
+                    allBookings = data;
+                    localStorage.setItem('partizanBookings', JSON.stringify(allBookings));
+                }
+            } catch (e) {
+                console.log('Cloud load error');
+            }
+        }
+
+        // Setup real-time listener for new bookings
+        function setupRealtimeListener() {
+            if (!supabaseReady) return;
+            
+            supabase.channel('bookings-channel')
+                .on('postgres_changes', 
+                    { event: '*', schema: 'public', table: 'bookings' }, 
+                    (payload) => {
+                        loadAllBookingsFromCloud();
+                        if (bookingData.date && document.getElementById('bookingModal').classList.contains('active')) {
+                            renderTimeSlots(bookingData.date);
+                        }
+                    })
+                .subscribe();
+        }
+
+        // Sync booking TO Supabase
+        async function syncBookingToCloud(booking) {
+            if (!supabaseReady) {
+                syncBookingsToDevice();
+                return;
+            }
+            
+            try {
+                const { error } = await supabase.from('bookings').insert([booking]);
+                if (error) {
+                    console.log('Upload error', error);
+                    syncBookingsToDevice();
+                } else {
+                    localStorage.setItem('partizanBookings', JSON.stringify(allBookings));
+                }
+            } catch (e) {
+                console.log('Upload error');
+                syncBookingsToDevice();
+            }
+        }
+
+        // Fallback: localStorage device sync
         let lastSyncTime = Date.now();
 
-        // Refresh bookings from localStorage (simulates cloud sync)
         function refreshBookingsFromDevice() {
             const saved = localStorage.getItem('partizanBookings');
             if (saved) {
                 try {
                     const loadedBookings = JSON.parse(saved);
-                    // Only update if there are new bookings
                     if (loadedBookings.length !== allBookings.length || 
                         JSON.stringify(loadedBookings) !== JSON.stringify(allBookings)) {
                         allBookings = loadedBookings;
-                        // Re-render time slots if modal is open and we're on step 4
                         if (bookingData.date && document.getElementById('bookingModal').classList.contains('active')) {
                             renderTimeSlots(bookingData.date);
                         }
@@ -1290,21 +1362,13 @@
             }
         }
 
-        // Sync bookings TO localStorage (all devices read from same storage)
         function syncBookingsToDevice() {
             localStorage.setItem('partizanBookings', JSON.stringify(allBookings));
             lastSyncTime = Date.now();
         }
 
-        // Initialize device sync - check for updates every 3 seconds
         function initializeDeviceSync() {
-            // Check for updates when modal opens
-            document.getElementById('bookingModal')?.addEventListener('shown.bs.modal', refreshBookingsFromDevice);
-            
-            // Periodic refresh every 2 seconds
             setInterval(refreshBookingsFromDevice, 2000);
-            
-            // Also refresh on page focus (when user comes back to tab)
             window.addEventListener('focus', refreshBookingsFromDevice);
         }
 
@@ -1312,7 +1376,7 @@
         let allBookings = JSON.parse(localStorage.getItem('partizanBookings')) || [];
 
         function getBookedSlotsByBarber(barberId, dateStr) {
-            refreshBookingsFromDevice();
+            if (!supabaseReady) refreshBookingsFromDevice();
             const slots = [];
             allBookings.forEach(booking => {
                 if (booking.barber === barberId && booking.date === dateStr && booking.status !== 'cancelled') {
@@ -1578,7 +1642,7 @@
             };
 
             allBookings.push(newBooking);
-            syncBookingsToDevice();
+            syncBookingToCloud(newBooking);
 
             document.getElementById('finalConfirmText').innerHTML = `<span class="block text-zinc-400">Appointment with ${barber.name}</span><span class="gold-text">${serviceName}</span><span class="block text-zinc-500 text-sm mt-2">${dateStr} at ${bookingData.time}</span>`;
 
@@ -1781,7 +1845,7 @@
             };
 
             allBookings.push(newBooking);
-            syncBookingsToDevice();
+            syncBookingToCloud(newBooking);
 
             document.getElementById('manualBarber').value = '';
             document.getElementById('manualService').value = '';
@@ -1807,7 +1871,7 @@
         });
 
         window.onload = () => {
-            initializeDeviceSync();
+            initializeSupabase();
             setLanguage(localStorage.getItem('lang') || 'en');
             setTimeout(() => document.querySelectorAll('.reveal').forEach(el => {
                 if(el.getBoundingClientRect().top < window.innerHeight) el.classList.add('active');
