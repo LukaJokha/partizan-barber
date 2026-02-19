@@ -7,8 +7,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@100;300;400;700&display=swap" rel="stylesheet">
     <style>
         :root { --gold: #C5A059; --dark: #080808; }
@@ -1268,77 +1266,53 @@
             { name: 'Hair Treatment', price: '120', description: 'Rejuvenating keratin infusion and scalp massage' }
         ];
 
-        // Firebase Configuration for Cloud Sync
-        const firebaseConfig = {
-            apiKey: "AIzaSyDnVVIQhD0EXJ_SBGp-PKR81v0LG6pY2PM",
-            authDomain: "partizan-barber.firebaseapp.com",
-            projectId: "partizan-barber",
-            databaseURL: "https://partizan-barber-default-rtdb.firebaseio.com",
-            storageBucket: "partizan-barber.firebasestorage.app",
-            messagingSenderId: "124609813968",
-            appId: "1:124609813968:web:7a3b8c9f2e1d45f6a2b3c4"
-        };
+        // Cloud Sync using localStorage with polling
+        let lastSyncTime = Date.now();
 
-        let database;
-        let firebaseReady = false;
-
-        // Initialize Firebase
-        function initializeFirebase() {
-            try {
-                const app = firebase.initializeApp(firebaseConfig);
-                database = firebase.database(app);
-                firebaseReady = true;
-                syncBookingsFromCloud();
-                listenToCloudUpdates();
-            } catch (e) {
-                console.log('Firebase setup: Using localStorage fallback');
-                firebaseReady = false;
+        // Refresh bookings from localStorage (simulates cloud sync)
+        function refreshBookingsFromDevice() {
+            const saved = localStorage.getItem('partizanBookings');
+            if (saved) {
+                try {
+                    const loadedBookings = JSON.parse(saved);
+                    // Only update if there are new bookings
+                    if (loadedBookings.length !== allBookings.length || 
+                        JSON.stringify(loadedBookings) !== JSON.stringify(allBookings)) {
+                        allBookings = loadedBookings;
+                        // Re-render time slots if modal is open and we're on step 4
+                        if (bookingData.date && document.getElementById('bookingModal').classList.contains('active')) {
+                            renderTimeSlots(bookingData.date);
+                        }
+                    }
+                } catch (e) {
+                    console.log('Sync error');
+                }
             }
         }
 
-        // Sync bookings FROM cloud to device
-        function syncBookingsFromCloud() {
-            if (!firebaseReady || !database) return;
-            
-            firebase.database().ref('bookings').once('value').then(snapshot => {
-                const cloudBookings = snapshot.val();
-                if (cloudBookings) {
-                    allBookings = Object.values(cloudBookings);
-                    localStorage.setItem('partizanBookings', JSON.stringify(allBookings));
-                }
-            }).catch(e => console.log('Sync error'));
+        // Sync bookings TO localStorage (all devices read from same storage)
+        function syncBookingsToDevice() {
+            localStorage.setItem('partizanBookings', JSON.stringify(allBookings));
+            lastSyncTime = Date.now();
         }
 
-        // Sync bookings TO cloud from device
-        function syncBookingsToCloud() {
-            if (!firebaseReady || !database) return;
+        // Initialize device sync - check for updates every 3 seconds
+        function initializeDeviceSync() {
+            // Check for updates when modal opens
+            document.getElementById('bookingModal')?.addEventListener('shown.bs.modal', refreshBookingsFromDevice);
             
-            const updates = {};
-            allBookings.forEach(booking => {
-                updates['bookings/' + booking.id] = booking;
-            });
-            firebase.database().ref().update(updates).catch(e => console.log('Upload error'));
-        }
-
-        // Listen to real-time updates from other devices
-        function listenToCloudUpdates() {
-            if (!firebaseReady || !database) return;
+            // Periodic refresh every 2 seconds
+            setInterval(refreshBookingsFromDevice, 2000);
             
-            firebase.database().ref('bookings').on('child_added', snapshot => {
-                const newBooking = snapshot.val();
-                const exists = allBookings.find(b => b.id === newBooking.id);
-                if (!exists) {
-                    allBookings.push(newBooking);
-                    localStorage.setItem('partizanBookings', JSON.stringify(allBookings));
-                    renderTimeSlots(bookingData.date);
-                }
-            });
+            // Also refresh on page focus (when user comes back to tab)
+            window.addEventListener('focus', refreshBookingsFromDevice);
         }
 
         let currentMonth = new Date();
         let allBookings = JSON.parse(localStorage.getItem('partizanBookings')) || [];
 
         function getBookedSlotsByBarber(barberId, dateStr) {
+            refreshBookingsFromDevice();
             const slots = [];
             allBookings.forEach(booking => {
                 if (booking.barber === barberId && booking.date === dateStr && booking.status !== 'cancelled') {
@@ -1354,6 +1328,7 @@
         }
 
         function openBookingModal() {
+            refreshBookingsFromDevice();
             document.getElementById('bookingModal').classList.add('active');
             document.body.style.overflow = 'hidden';
             loadBarberCards();
@@ -1603,8 +1578,7 @@
             };
 
             allBookings.push(newBooking);
-            localStorage.setItem('partizanBookings', JSON.stringify(allBookings));
-            syncBookingsToCloud();
+            syncBookingsToDevice();
 
             document.getElementById('finalConfirmText').innerHTML = `<span class="block text-zinc-400">Appointment with ${barber.name}</span><span class="gold-text">${serviceName}</span><span class="block text-zinc-500 text-sm mt-2">${dateStr} at ${bookingData.time}</span>`;
 
@@ -1807,8 +1781,7 @@
             };
 
             allBookings.push(newBooking);
-            localStorage.setItem('partizanBookings', JSON.stringify(allBookings));
-            syncBookingsToCloud();
+            syncBookingsToDevice();
 
             document.getElementById('manualBarber').value = '';
             document.getElementById('manualService').value = '';
@@ -1834,7 +1807,7 @@
         });
 
         window.onload = () => {
-            initializeFirebase();
+            initializeDeviceSync();
             setLanguage(localStorage.getItem('lang') || 'en');
             setTimeout(() => document.querySelectorAll('.reveal').forEach(el => {
                 if(el.getBoundingClientRect().top < window.innerHeight) el.classList.add('active');
